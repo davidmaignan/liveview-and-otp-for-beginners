@@ -8,16 +8,16 @@ defmodule TutorialWeb.AlbumsLive do
     <div class="flex h-screen bg-slate-200">
       <div class="w-64 bg-slate-700 text-white shadow-md px-4 py-6">
         <h2 class="text-lg font-bold mb-4">
-          <a href={~p"/albums"}>Albums</a>
-          <a href={~p"/beatles"} class="text-sm hover:underline font-normal">
+          <.link navigate={~p"/albums"}>Albums</.link>
+          <.link navigate={~p"/beatles"} class="text-sm hover:underline font-normal">
             View Beatles
-          </a>
+          </.link>
         </h2>
         <ul class="space-y-2">
           <li :for={album <- @albums} class="hover:bg-slate-600 rounded">
-            <a href={~p"/albums/#{album}"} class="block p-2 w-full h-full">
+            <.link navigate={~p"/albums/#{album}"} class="block p-2 w-full h-full">
               {album.name}
-            </a>
+            </.link>
           </li>
         </ul>
       </div>
@@ -55,12 +55,16 @@ defmodule TutorialWeb.AlbumsLive do
   def mount(params, _session, socket) do
     albums = Beatles.list_albums()
 
+    {:ok, assign(socket, albums: albums)}
+  end
+
+  def handle_params(params, _uri, socket) do
     album =
       case Map.fetch(params, "id") do
-        {:ok, id} -> Enum.find(albums, &(to_string(&1.id) == id))
+        {:ok, id} -> Enum.find(socket.assigns.albums, &(to_string(&1.id) == id))
         :error -> nil
       end
 
-    {:ok, assign(socket, album: album, albums: albums)}
+    {:noreply, assign(socket, album: album)}
   end
 end

@@ -1,4 +1,5 @@
 defmodule TutorialWeb.PollLive do
+  alias Phoenix.PubSub
   use TutorialWeb, :live_view
 
   def render(assigns) do
@@ -35,7 +36,7 @@ defmodule TutorialWeb.PollLive do
               phx-click="reset"
               class="px-6 py-2 bg-red-500 text-white rounded-lg
                    hover:bg-red-600 transition-colors duration-200
-                   font-medium focus:outline-none focus:ring-2 
+                   font-medium focus:outline-none focus:ring-2
                    focus:ring-red-500 focus:ring-offset-2"
             >
               Reset Poll
@@ -54,17 +55,31 @@ defmodule TutorialWeb.PollLive do
     "D" => 0
   }
 
+  @pubsub_topic "poll"
+
   def mount(_params, _session, socket) do
+    PubSub.subscribe(Tutorial.PubSub, @pubsub_topic)
     {:ok, assign(socket, votes: @initial_votes)}
   end
 
   def handle_event("vote", %{"option" => option}, socket) do
-    new_votes = Map.update!(socket.assigns.votes, option, &(&1 + 1))
+    PubSub.broadcast(Tutorial.PubSub, @pubsub_topic, {:vote, option})
 
-    {:noreply, assign(socket, :votes, new_votes)}
+    {:noreply, socket}
   end
 
   def handle_event("reset", _, socket) do
+    PubSub.broadcast(Tutorial.PubSub, @pubsub_topic, :reset)
     {:noreply, assign(socket, votes: @initial_votes)}
+  end
+
+  def handle_info(:reset, socket) do
+    {:noreply, assign(socket, votes: @initial_votes)}
+  end
+
+  def handle_info({:vote, option}, socket) do
+    new_votes = Map.update!(socket.assigns.votes, option, &(&1 + 1))
+
+    {:noreply, assign(socket, :votes, new_votes)}
   end
 end
