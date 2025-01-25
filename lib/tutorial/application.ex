@@ -15,6 +15,7 @@ defmodule Tutorial.Application do
       {Finch, name: Tutorial.Finch},
       # Start a worker by calling: Tutorial.Worker.start_link(arg)
       # {Tutorial.Worker, arg},
+      Tutorial.PollResults,
       # Start to serve requests, typically the last entry
       TutorialWeb.Endpoint
     ]

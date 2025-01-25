@@ -1,6 +1,7 @@
 defmodule TutorialWeb.PollLive do
-  alias Phoenix.PubSub
   use TutorialWeb, :live_view
+
+  alias Tutorial.PollResults
 
   def render(assigns) do
     ~H"""
@@ -48,38 +49,24 @@ defmodule TutorialWeb.PollLive do
     """
   end
 
-  @initial_votes %{
-    "A" => 0,
-    "B" => 0,
-    "C" => 0,
-    "D" => 0
-  }
-
   @pubsub_topic "poll"
 
   def mount(_params, _session, socket) do
-    PubSub.subscribe(Tutorial.PubSub, @pubsub_topic)
-    {:ok, assign(socket, votes: @initial_votes)}
+    PollResults.subscribe_to_updates()
+    {:ok, assign(socket, votes: PollResults.get_state())}
   end
 
   def handle_event("vote", %{"option" => option}, socket) do
-    PubSub.broadcast(Tutorial.PubSub, @pubsub_topic, {:vote, option})
-
+    PollResults.vote(option)
     {:noreply, socket}
   end
 
   def handle_event("reset", _, socket) do
-    PubSub.broadcast(Tutorial.PubSub, @pubsub_topic, :reset)
-    {:noreply, assign(socket, votes: @initial_votes)}
+    PollResults.reset()
+    {:noreply, socket}
   end
 
-  def handle_info(:reset, socket) do
-    {:noreply, assign(socket, votes: @initial_votes)}
-  end
-
-  def handle_info({:vote, option}, socket) do
-    new_votes = Map.update!(socket.assigns.votes, option, &(&1 + 1))
-
-    {:noreply, assign(socket, :votes, new_votes)}
+  def handle_info({:update_results, votes}, socket) do
+    {:noreply, assign(socket, votes: votes)}
   end
 end
